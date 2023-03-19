@@ -110,11 +110,8 @@ public class DBConnection {
             Statement statement = dbConnection.createStatement();
             statement.executeUpdate(sql);
 
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
     }
 }

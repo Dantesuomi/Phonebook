@@ -2,6 +2,7 @@ package phonebook;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -28,7 +29,9 @@ public class MenuController {
                         "3. Find contact\n" +
                         "4. Update contact\n" +
                         "5. Show contact list\n" +
-                        "6. Exit application\n"
+                        "6. Export contact list into CSV\n" +
+                        "7. Import contacts from CSV file\n" +
+                        "8. Exit application\n"
         );
 
         switch (option){
@@ -48,12 +51,61 @@ public class MenuController {
                 this.showContactList();
                 break;
             case "6":
+                this.exportToCsv();
+                break;
+            case "7":
+                this.importFromCsv();
+                break;
+            case "8":
                 System.exit(0);
                 break;
 
         }
         this.displayMainMenu();
 
+    }
+
+    private void importFromCsv() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File(System.getProperty("user.home")));
+        JPanel exportToCsvPanel = new JPanel();
+        int result = fileChooser.showOpenDialog(exportToCsvPanel);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            // user selects a file
+            File selectedFile = fileChooser.getSelectedFile();
+            try {
+                ArrayList<Contact> contacts = Csv.readTheFile(selectedFile);
+                for (Contact contact : contacts) {
+                    DBConnection.createContact(contact);
+                }
+                JOptionPane.showMessageDialog(null, "Import successful");
+            }
+            catch (Exception e){
+                JOptionPane.showMessageDialog(null, "Failed to import","Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void exportToCsv() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File(System.getProperty("user.home") + "\\export.csv"));
+        JPanel exportToCsvPanel = new JPanel();
+        int result = fileChooser.showOpenDialog(exportToCsvPanel);
+
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            // user selects a file
+            File selectedFile = fileChooser.getSelectedFile();
+            ArrayList<Contact> contacts = DBConnection.getAllContacts();
+            boolean writeSucceeded = Csv.writeToFile(contacts, selectedFile);
+            if(writeSucceeded){
+                JOptionPane.showMessageDialog(null, "Export successful");
+            }
+            else {
+                JOptionPane.showMessageDialog(null, "Failed to export","Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private String getUserInput(String message){
@@ -83,7 +135,6 @@ public class MenuController {
         int result = JOptionPane.showConfirmDialog(null, myPanel,
                 "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            //TODO : ADD VALIDATION
             Contact lookupContact = new Contact(fullNameField.getText(), phoneNumberField.getText());
 
             ArrayList<Contact> contacts = DBConnection.findContacts(lookupContact);
