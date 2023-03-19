@@ -1,18 +1,22 @@
 package phonebook;
 
 import javax.swing.*;
-import java.awt.*;
+import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
-import java.util.TreeSet;
+import java.util.Vector;
 
 public class MenuController {
 
     public void start(){
-        JOptionPane.showConfirmDialog(null,
+        int result = JOptionPane.showConfirmDialog(null,
                 "Welcome to Phonebook" +
                         " Please choose an option on the next prompt", "Welcome to Phonebook", JOptionPane.OK_CANCEL_OPTION);
-
-        this.displayMainMenu();
+        if(result == JOptionPane.OK_OPTION){
+            this.displayMainMenu();
+        }
+        else {
+            System.exit(0);
+        }
     }
 
     private void displayMainMenu(){
@@ -57,9 +61,73 @@ public class MenuController {
     }
 
     private void showContactList() {
+        ArrayList<Contact> contacts = DBConnection.getAllContacts();
+        JPanel panel = generateContactPanel(contacts);
+
+        JOptionPane.showMessageDialog(null, panel, "Your contacts", JOptionPane.INFORMATION_MESSAGE);
+
     }
 
     private void updateContact() {
+        JTextField fullNameField = new JTextField(10);
+        JTextField phoneNumberField = new JTextField(10);
+
+
+        JPanel myPanel = new JPanel();
+        myPanel.add(new JLabel("Full Name: "));
+        myPanel.add(fullNameField);
+        myPanel.add(Box.createHorizontalStrut(15)); // a spacer
+        myPanel.add(new JLabel("Phone number: "));
+        myPanel.add(phoneNumberField);
+
+        int result = JOptionPane.showConfirmDialog(null, myPanel,
+                "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            //TODO : ADD VALIDATION
+            Contact lookupContact = new Contact(fullNameField.getText(), phoneNumberField.getText());
+
+            ArrayList<Contact> contacts = DBConnection.findContacts(lookupContact);
+            if (contacts.isEmpty()){
+                JOptionPane.showMessageDialog(null, "Contact not found");
+                return;
+            }
+
+            Contact contactToUpdate = (Contact) JOptionPane.showInputDialog(null, "Choose, which contact to update", "Choose contact", JOptionPane.QUESTION_MESSAGE, null, contacts.toArray(), 0);
+
+            executeContactUpdatePane(contactToUpdate);
+
+        }
+    }
+
+    private static void executeContactUpdatePane(Contact contactToUpdate) {
+        JTextField updatedFullNameField = new JTextField(contactToUpdate.getFullName(), 10);
+        JTextField updatedPhoneNumberField = new JTextField(contactToUpdate.getPhoneNumber(), 10);
+        JTextField updatedEmailField = new JTextField(contactToUpdate.getEmail(), 10);
+
+        JPanel updateContactPanel = new JPanel();
+        updateContactPanel.add(new JLabel("Full Name: "));
+        updateContactPanel.add(updatedFullNameField);
+        updateContactPanel.add(Box.createHorizontalStrut(15)); // a spacer
+        updateContactPanel.add(new JLabel("Phone number: "));
+        updateContactPanel.add(updatedPhoneNumberField);
+        updateContactPanel.add(Box.createHorizontalStrut(15)); // a spacer
+        updateContactPanel.add(new JLabel("Email(optional): "));
+        updateContactPanel.add(updatedEmailField);
+
+        int updatedResult = JOptionPane.showConfirmDialog(null, updateContactPanel,
+                "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
+        if (updatedResult == JOptionPane.OK_OPTION) {
+            if(StringHelpers.isNullOrEmpty(updatedFullNameField.getText()) || StringHelpers.isNullOrEmpty(updatedPhoneNumberField.getText()) ) {
+                JOptionPane.showMessageDialog(null, "Please enter both full name and phone number", "Error", JOptionPane.ERROR_MESSAGE);
+                executeContactUpdatePane(contactToUpdate);
+            }
+            else {
+                Contact updatedContact = new Contact(updatedFullNameField.getText(), updatedPhoneNumberField.getText(), updatedEmailField.getText());
+                DBConnection.updateContact(contactToUpdate, updatedContact);
+
+                JOptionPane.showMessageDialog(null, "Contact was successfully updated");
+            }
+        }
     }
 
     private void findContact() {
@@ -78,25 +146,44 @@ public class MenuController {
         int result = JOptionPane.showConfirmDialog(null, myPanel,
                 "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            //TODO : ADD VALIDATION
-            Contact contact = new Contact(fullNameField.getText(), phoneNumberField.getText());
+            Contact lookupContact = new Contact(fullNameField.getText(), phoneNumberField.getText());
 
-            ArrayList<Contact> contacts = DBConnection.findContacts(contact);
-            String message = "";
+            ArrayList<Contact> contacts = DBConnection.findContacts(lookupContact);
+            JPanel panel = generateContactPanel(contacts);
 
-            if(contacts.isEmpty()){
-                message = "No matches found";
-            }else {
-                message = contacts.toString();
-            }
-            JOptionPane.showMessageDialog(null, message, "Search results", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, panel, "Search results", JOptionPane.INFORMATION_MESSAGE);
         }
-
-
-
     }
 
     private void removeContact() {
+
+        JTextField fullNameField = new JTextField(10);
+        JTextField phoneNumberField = new JTextField(10);
+
+
+        JPanel myPanel = new JPanel();
+        myPanel.add(new JLabel("Full Name: "));
+        myPanel.add(fullNameField);
+        myPanel.add(Box.createHorizontalStrut(15)); // a spacer
+        myPanel.add(new JLabel("Phone number: "));
+        myPanel.add(phoneNumberField);
+
+        int result = JOptionPane.showConfirmDialog(null, myPanel,
+                "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            Contact lookupContact = new Contact(fullNameField.getText(), phoneNumberField.getText());
+
+            ArrayList<Contact> contacts = DBConnection.findContacts(lookupContact);
+            if (contacts.isEmpty()){
+                JOptionPane.showMessageDialog(null, "Contact not found");
+                return;
+            }
+
+            Contact contactToRemove = (Contact) JOptionPane.showInputDialog(null, "Which contact to delete", "Choose contact", JOptionPane.QUESTION_MESSAGE, null, contacts.toArray(), 0);
+            DBConnection.deleteContact(contactToRemove);
+
+            JOptionPane.showMessageDialog(null, "Contact was successfully deleted");
+        }
     }
 
     private void addNewContact() {
@@ -117,13 +204,38 @@ public class MenuController {
         int result = JOptionPane.showConfirmDialog(null, myPanel,
                 "Please enter contact details", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            //TODO : ADD VALIDATION
-            Contact contact = new Contact(fullNameField.getText(), phoneNumberField.getText(), emailField.getText());
-            DBConnection.createContact(contact);
+            if(StringHelpers.isNullOrEmpty(fullNameField.getText()) || StringHelpers.isNullOrEmpty(phoneNumberField.getText()) ) {
+                JOptionPane.showMessageDialog(null, "Please enter both full name and phone number", "Error", JOptionPane.ERROR_MESSAGE);
+                addNewContact();
+            }
+            else {
+                Contact contact = new Contact(fullNameField.getText(), phoneNumberField.getText(), emailField.getText());
+                DBConnection.createContact(contact);
+            }
         }
 
     }
 
+    private JPanel generateContactPanel(ArrayList<Contact> contacts){
+        Vector<Vector<String>> dataVector = new Vector<>();
+        for (Contact contact : contacts) {
+            Vector<String> rowVector = new Vector<>();
+            rowVector.add(contact.getFullName());
+            rowVector.add(contact.getPhoneNumber());
+            rowVector.add(contact.getEmail());
+            dataVector.add(rowVector);
+        }
 
+        Vector<String> columnNamesVector = new Vector<>();
+        columnNamesVector.add("Full name");
+        columnNamesVector.add("Phone number");
+        columnNamesVector.add("Email");
+
+        DefaultTableModel tableModel = new DefaultTableModel(dataVector, columnNamesVector);
+        JTable table = new JTable(tableModel);
+        JPanel panel = new JPanel();
+        panel.add(new JScrollPane(table));
+        return panel;
+    }
 
 }
