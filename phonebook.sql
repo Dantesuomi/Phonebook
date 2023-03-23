@@ -8,3 +8,7 @@ CREATE TABLE Phonebook(
     phoneNumber   varchar(100),
     email         varchar(100)
 );
+
+SELECT * FROM phonebook;
+SET SQL_SAFE_UPDATES = 0;
+DELETE FROM phonebook;

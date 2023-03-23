@@ -242,6 +242,7 @@ public class MenuController {
         JTextField phoneNumberField = new JTextField(10);
         JTextField emailField = new JTextField(10);
 
+        //formatting
         JPanel myPanel = new JPanel();
         myPanel.add(new JLabel("Full Name: "));
         myPanel.add(fullNameField);
